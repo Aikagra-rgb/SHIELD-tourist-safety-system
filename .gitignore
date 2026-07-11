@@ -34,3 +34,14 @@ desktop.ini
 # Temporary files
 *.tmp
 *.temp
+
+# SQLite Databases
+*.db
+*.db-journal
+*.db-wal
+
+# Python/Pytest Cache
+__pycache__/
+.pytest_cache/
+.pytest/
+*.pyc

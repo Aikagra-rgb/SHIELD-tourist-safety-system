@@ -5,14 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SHIELD - Production Real-Time Tourist Safety Monitoring & Incident Response System</title>
   <meta name="description" content="AI, Blockchain, and Geo-Fencing powered Tourist Safety Ecosystem and Incident Management Command Center.">
+    <meta name="theme-color" content="#0f766e">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="shield-icon.svg" type="image/svg+xml">
   
   <!-- Leaflet GIS Map CSS CDN -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   
   <!-- Custom Cyberpunk Stylesheet -->
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- PWA Manifest Link -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0f1e">
 </head>
 <body>
+
+  <div class="auth-overlay" id="auth-login-modal">
+    <form class="auth-card" id="authority-login-form">
+      <div class="auth-brand">SHIELD Authority Console</div>
+      <p class="auth-copy">Secure access is required for live threats, incident history, and E-FIR persistence.</p>
+      <label for="authority-username">Username</label>
+      <input type="text" id="authority-username" class="form-control" value="admin" autocomplete="username" required>
+      <label for="authority-password">Password</label>
+      <input type="password" id="authority-password" class="form-control" value="shield_admin_2026" autocomplete="current-password" required>
+      <button type="submit" class="btn-primary" id="btn-authority-login">Unlock Console</button>
+      <div class="auth-error" id="authority-login-error"></div>
+    </form>
+  </div>
 
   <!-- Background Scan HUD Overlay for premium look -->
   <div class="map-scan-line"></div>
@@ -46,6 +66,18 @@
         <div class="stat-pill">
           <div class="indicator" id="sos-count-indicator"></div>
           <span>Active Alerts: <strong id="header-alert-count" style="color: var(--text-primary)">0</strong></span>
+        </div>
+        <div class="stat-pill session-pill" id="authority-session-pill">
+          <div class="indicator" id="authority-auth-indicator"></div>
+          <span>Authority: <strong id="authority-auth-label">LOCKED</strong></span>
+          <button class="mini-action-btn" id="btn-logout" title="Lock Authority Console">Lock</button>
+        </div>
+        <div class="stat-pill">
+          <span>Theme</span>
+          <label class="switch" title="Toggle light and dark mode">
+            <input type="checkbox" id="theme-mode-toggle">
+            <span class="slider"></span>
+          </label>
         </div>
         <button class="mute-hud-btn" id="audio-mute-toggle" title="Toggle Sound Warnings">🔊</button>
       </div>
@@ -180,6 +212,9 @@
           <div class="blockchain-actions">
             <button class="btn-secondary" id="btn-audit-ledger" title="Re-verify block cryptographic linkages">
               🔄 Audit Ledger
+            </button>
+            <button class="btn-secondary" id="btn-print-ledger" title="Export a print-ready ledger report">
+              Export Ledger
             </button>
             <button class="btn-secondary danger" id="btn-tamper-ledger" title="Simulate a security intrusion attempt">
               ⚡ Inject Tamper
@@ -422,6 +457,31 @@
               </div>
             </div>
 
+            <div class="card incident-history-card">
+              <h4 class="column-title" style="font-size: 0.85rem; margin-bottom: 10px;">
+                <span>Historic Incident Log</span>
+                <button class="mini-action-btn" id="btn-refresh-history" title="Refresh incident history">Refresh</button>
+              </h4>
+              <div class="history-status-line">
+                <span id="ws-status">Realtime channel: standby</span>
+              </div>
+              <div class="incident-table-wrap">
+                <table class="incident-table">
+                  <thead>
+                    <tr>
+                      <th>FIR</th>
+                      <th>Severity</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody id="incident-history-body">
+                    <tr><td colspan="4">Login to sync SQLite records.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
           <!-- Column Right - Bottom Right: Automated Legal E-FIR System -->
@@ -492,5 +552,16 @@
   <script src="languages.js"></script>
   <script src="blockchain.js"></script>
   <script src="app.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then((reg) => console.log('[Service Worker] Registered', reg))
+          .catch((err) => console.error('[Service Worker] Registration failed', err));
+      });
+    }
+  </script>
 </body>
 </html>

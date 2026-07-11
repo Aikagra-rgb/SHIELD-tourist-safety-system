@@ -1,5 +1,9 @@
 // SHIELD - Production Real-Time Application Coordinator & State Manager
 
+const shieldApiBaseUrl = window.location.port === '8000'
+  ? window.location.origin
+  : 'http://127.0.0.1:8000';
+
 // Core Application State
 let state = {
   blockchain: new Blockchain(),
@@ -11,7 +15,14 @@ let state = {
   // Enterprise mode gateways switches
   enterpriseMode: false,
   gatewayGisUrl: 'http://localhost:8080',
-  gatewayAiUrl: 'http://localhost:8000',
+  gatewayAiUrl: shieldApiBaseUrl,
+  authToken: localStorage.getItem('shield_authority_jwt'),
+  authUser: localStorage.getItem('shield_authority_user') || null,
+  wsClient: null,
+  wsFallbackTimer: null,
+  incidentHistory: [],
+  heatmapLayers: [],
+  themeMode: localStorage.getItem('shield_theme_mode') || 'dark',
   
   // Real GIS Coordinates (Centered in East Khasi Hills, Meghalaya)
   gpsCoords: { lat: 25.5788, lon: 91.8931 }, // Shillong coordinates
@@ -77,6 +88,271 @@ const GEOFENCE_ZONES = [
     ]
   }
 ];
+
+function getAuthHeaders(extraHeaders = {}) {
+  const headers = { ...extraHeaders };
+  if (state.authToken) {
+    headers.Authorization = `Bearer ${state.authToken}`;
+  }
+  return headers;
+}
+
+function setAuthState(token, username = 'admin') {
+  state.authToken = token;
+  state.authUser = token ? username : null;
+  if (token) {
+    localStorage.setItem('shield_authority_jwt', token);
+    localStorage.setItem('shield_authority_user', username);
+  } else {
+    localStorage.removeItem('shield_authority_jwt');
+    localStorage.removeItem('shield_authority_user');
+  }
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const modal = document.getElementById('auth-login-modal');
+  const label = document.getElementById('authority-auth-label');
+  const pill = document.getElementById('authority-session-pill');
+  if (!modal || !label || !pill) return;
+
+  if (state.authToken) {
+    modal.classList.add('auth-hidden');
+    label.innerText = state.authUser ? state.authUser.toUpperCase() : 'UNLOCKED';
+    pill.classList.add('authenticated');
+    pill.classList.remove('locked');
+  } else {
+    modal.classList.remove('auth-hidden');
+    label.innerText = 'LOCKED';
+    pill.classList.add('locked');
+    pill.classList.remove('authenticated');
+  }
+}
+
+async function loginAuthority(username, password) {
+  const formData = new URLSearchParams();
+  formData.append('username', username);
+  formData.append('password', password);
+
+  const res = await fetch(`${state.gatewayAiUrl}/api/v1/ai/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData
+  });
+
+  if (!res.ok) {
+    throw new Error('Authority credentials were rejected by the AI service.');
+  }
+  const payload = await res.json();
+  setAuthState(payload.access_token, username);
+  pushAlert('AUTH', `Authority console unlocked for ${username}.`, 'info');
+  connectTelemetryWebSocket();
+  fetchIncidentHistory();
+}
+
+function logoutAuthority() {
+  if (state.wsClient) {
+    state.wsClient.close();
+    state.wsClient = null;
+  }
+  if (state.wsFallbackTimer) {
+    clearInterval(state.wsFallbackTimer);
+    state.wsFallbackTimer = null;
+  }
+  setAuthState(null);
+  renderIncidentHistory([]);
+  const wsStatus = document.getElementById('ws-status');
+  if (wsStatus) wsStatus.innerText = 'Realtime channel: locked';
+}
+
+function initThemeMode() {
+  document.body.classList.toggle('light-mode', state.themeMode === 'light');
+  const toggle = document.getElementById('theme-mode-toggle');
+  if (toggle) toggle.checked = state.themeMode === 'light';
+}
+
+function setThemeMode(mode) {
+  state.themeMode = mode;
+  localStorage.setItem('shield_theme_mode', mode);
+  document.body.classList.toggle('light-mode', mode === 'light');
+}
+
+function connectTelemetryWebSocket() {
+  if (!state.authToken) return;
+  if (state.wsClient) state.wsClient.close();
+
+  const wsStatus = document.getElementById('ws-status');
+  const wsBase = state.gatewayAiUrl.replace(/^http/i, 'ws');
+  state.wsClient = new WebSocket(`${wsBase}/api/v1/ai/ws?token=${encodeURIComponent(state.authToken)}`);
+
+  state.wsClient.onopen = () => {
+    if (wsStatus) wsStatus.innerText = 'Realtime channel: connected';
+    if (state.wsFallbackTimer) {
+      clearInterval(state.wsFallbackTimer);
+      state.wsFallbackTimer = null;
+    }
+  };
+
+  state.wsClient.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type === 'telemetry_anomaly') {
+        handleRealtimeTelemetryAlert(message.payload);
+      } else if (message.type === 'incident_created') {
+        fetchIncidentHistory();
+        pushAlert('SYSTEM', `New E-FIR Case "${message.payload.caseId}" filed for ${message.payload.touristName}.`, 'info');
+      }
+    } catch (err) {
+      console.error('WebSocket message parse failed:', err);
+    }
+  };
+
+  state.wsClient.onerror = () => {
+    if (wsStatus) wsStatus.innerText = 'Realtime channel: polling fallback';
+    startThreatPollingFallback();
+  };
+
+  state.wsClient.onclose = () => {
+    if (state.authToken) {
+      if (wsStatus) wsStatus.innerText = 'Realtime channel: reconnecting with polling fallback';
+      startThreatPollingFallback();
+    }
+  };
+}
+
+function startThreatPollingFallback() {
+  if (state.wsFallbackTimer || !state.authToken) return;
+  fetchActiveThreats();
+  state.wsFallbackTimer = setInterval(fetchActiveThreats, 7000);
+}
+
+async function fetchActiveThreats() {
+  if (!state.authToken) return;
+  try {
+    const res = await fetch(`${state.gatewayAiUrl}/api/v1/ai/active_threats`, {
+      headers: getAuthHeaders()
+    });
+    if (res.status === 401) {
+      logoutAuthority();
+      return;
+    }
+    if (!res.ok) throw new Error(`Threat sync failed: ${res.status}`);
+    const threats = await res.json();
+    threats.slice(0, 5).forEach(handleRealtimeTelemetryAlert);
+  } catch (err) {
+    console.error('Active threat polling failed:', err);
+  }
+}
+
+function handleRealtimeTelemetryAlert(report) {
+  if (!report || !report.threatScore) return;
+  const level = report.threatScore >= 0.75 ? 'sos' : report.threatScore >= 0.25 ? 'warning' : 'info';
+  pushAlert('LIVE AI ALERT', `Token ${report.tokenId}: ${report.safetyStatus} (${report.severity}, score ${report.threatScore})`, level);
+  renderTelemetryHeatmap(report);
+  if (report.incident) {
+    fetchIncidentHistory();
+  }
+}
+
+function renderTelemetryHeatmap(report) {
+  if (!state.leafletMap || !report.location) return;
+  const radius = Math.max(120, Math.round(report.threatScore * 650));
+  const color = report.threatScore >= 0.75 ? '#ef4444' : report.threatScore >= 0.25 ? '#f59e0b' : '#10b981';
+  const circle = L.circle([report.location.lat, report.location.lon], {
+    radius,
+    color,
+    fillColor: color,
+    fillOpacity: 0.16,
+    weight: 2,
+    className: 'leaflet-heat-pulse'
+  }).addTo(state.leafletMap);
+  state.heatmapLayers.push(circle);
+  if (state.heatmapLayers.length > 12) {
+    const oldLayer = state.heatmapLayers.shift();
+    oldLayer.remove();
+  }
+}
+
+async function fetchIncidentHistory() {
+  if (!state.authToken) return;
+  try {
+    const res = await fetch(`${state.gatewayAiUrl}/api/v1/ai/history`, {
+      headers: getAuthHeaders()
+    });
+    if (res.status === 401) {
+      logoutAuthority();
+      return;
+    }
+    if (!res.ok) throw new Error(`History sync failed: ${res.status}`);
+    const history = await res.json();
+    state.incidentHistory = history;
+    renderIncidentHistory(history);
+  } catch (err) {
+    console.error('Incident history sync failed:', err);
+    const body = document.getElementById('incident-history-body');
+    if (body) body.innerHTML = '<tr><td colspan="4">History service unavailable.</td></tr>';
+  }
+}
+
+function renderIncidentHistory(history) {
+  const body = document.getElementById('incident-history-body');
+  if (!body) return;
+  if (!history || history.length === 0) {
+    body.innerHTML = `<tr><td colspan="4">${state.authToken ? 'No incidents recorded yet.' : 'Login to sync SQLite records.'}</td></tr>`;
+    return;
+  }
+  body.innerHTML = history.map(incident => {
+    const severity = String(incident.severity || 'LOW').toLowerCase();
+    const created = incident.createdAt ? new Date(incident.createdAt).toLocaleString() : 'Pending';
+    return `
+      <tr title="${incident.summary || ''}">
+        <td>${incident.firNo}</td>
+        <td class="severity-${severity}">${incident.severity}</td>
+        <td>${incident.status}</td>
+        <td>${created}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function fileIncidentToBackend(ledgerHash) {
+  if (!state.authToken || !state.touristActive) return;
+  try {
+    const res = await fetch(`${state.gatewayAiUrl}/api/v1/ai/incidents`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        tokenId: 1,
+        severity: state.sosActive ? 'CRITICAL' : 'HIGH',
+        status: 'FILED',
+        summary: `Authority-filed E-FIR for ${state.touristData.name}`,
+        ledgerHash,
+        lat: state.gpsCoords.lat,
+        lon: state.gpsCoords.lon,
+        payload: {
+          tourist: state.touristData,
+          vitals: state.vitals,
+          gps: state.gpsCoords,
+          sosActive: state.sosActive,
+          geofenceBreach: state.geofenceBreach
+        }
+      })
+    });
+    if (!res.ok) throw new Error(`Incident filing failed: ${res.status}`);
+    fetchIncidentHistory();
+  } catch (err) {
+    console.error('Backend E-FIR persistence failed:', err);
+    pushAlert('E-FIR', 'Backend E-FIR persistence failed; local ledger copy remains available.', 'warning');
+  }
+}
+
+function registerPWA() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.warn('Service worker registration failed:', err);
+    });
+  }
+}
 
 // SVG QR Generator for Digital ID
 function generateSVGQR(text) {
@@ -491,7 +767,7 @@ function recalculateSafetyScore() {
     
     fetch(`${state.gatewayAiUrl}/api/v1/ai/predict_anomaly`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         tokenId: 1,
         currentLocation: { lat: state.gpsCoords.lat, lon: state.gpsCoords.lon },
@@ -507,6 +783,8 @@ function recalculateSafetyScore() {
       // Scale safety score from threat ratio (1.0 threat = 0 safety)
       const score = Math.round((1.0 - result.threatScore) * 100);
       pushAlert('GATEWAY API', `FastAPI AI Behavior Anomaly Threat Score: ${result.threatScore} (${result.safetyStatus})`, 'info');
+      renderTelemetryHeatmap(result);
+      if (result.incident) fetchIncidentHistory();
       
       // Update score UI
       updateSafetyGaugeUI(score);
@@ -1127,6 +1405,25 @@ function loadCachedTouristRegistry() {
 
 // Set up event listeners for main dashboard action buttons
 function initControlActionButtons() {
+  document.getElementById('authority-login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const errorBox = document.getElementById('authority-login-error');
+    if (errorBox) errorBox.innerText = '';
+    loginAuthority(
+      document.getElementById('authority-username').value.trim(),
+      document.getElementById('authority-password').value
+    ).catch(err => {
+      if (errorBox) errorBox.innerText = err.message;
+    });
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', logoutAuthority);
+
+  document.getElementById('theme-mode-toggle').addEventListener('change', (e) => {
+    setThemeMode(e.target.checked ? 'light' : 'dark');
+  });
+
+  document.getElementById('btn-refresh-history').addEventListener('click', fetchIncidentHistory);
   
   // Camera toggle button
   document.getElementById('btn-toggle-camera').addEventListener('click', () => {
@@ -1327,16 +1624,25 @@ function initControlActionButtons() {
       status: "FILED & SIGNED BY COMMAND CENTER"
     });
     
-    state.blockchain.minePendingTransactions('State Police Command Node');
+    const block = state.blockchain.minePendingTransactions('State Police Command Node');
     pushAlert('E-FIR', "E-FIR officially submitted and signed on state police consortium ledger.", 'info');
     speakVoiceAlert("E F I R filed and registered on security blockchain.");
+    fileIncidentToBackend(block.hash);
     
     redraftEFIR();
     renderBlockchainBlocks();
   });
   
   // E-FIR Print/Save trigger
+  document.getElementById('btn-print-efir').addEventListener('click', () => {
     window.print();
+  });
+
+  // Blockchain Ledger print export trigger
+  document.getElementById('btn-print-ledger').addEventListener('click', () => {
+    document.body.classList.add('print-ledger-active');
+    window.print();
+    setTimeout(() => document.body.classList.remove('print-ledger-active'), 500);
   });
 
   // Toggle Enterprise Gateways Mode
@@ -1368,6 +1674,9 @@ function startSmartphoneClock() {
 
 // Startup Initialization sequence
 window.addEventListener('DOMContentLoaded', () => {
+  initThemeMode();
+  updateAuthUI();
+
   // 1. Initial Genesis block
   renderBlockchainBlocks();
   
@@ -1385,4 +1694,11 @@ window.addEventListener('DOMContentLoaded', () => {
   initControlActionButtons();
   initSimulationSliders();
   startSmartphoneClock();
+
+  if (state.authToken) {
+    connectTelemetryWebSocket();
+    fetchIncidentHistory();
+  }
+
+  registerPWA();
 });

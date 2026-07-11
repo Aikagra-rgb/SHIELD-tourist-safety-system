@@ -6,6 +6,7 @@
   /* HSL Color Palette */
   --bg-primary: hsl(222, 47%, 4%);
   --bg-secondary: hsl(220, 40%, 8%);
+  --bg-tertiary: hsl(217, 33%, 17%);
   --bg-card: rgba(15, 23, 42, 0.75);
   --bg-glass: rgba(15, 23, 42, 0.45);
   
@@ -42,6 +43,24 @@
   --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+body.light-mode {
+  --bg-primary: hsl(210, 40%, 98%);
+  --bg-secondary: hsl(214, 32%, 91%);
+  --bg-tertiary: hsl(213, 27%, 84%);
+  --bg-card: rgba(255, 255, 255, 0.86);
+  --bg-glass: rgba(255, 255, 255, 0.72);
+  --border-color: rgba(15, 23, 42, 0.14);
+  --border-glow: rgba(14, 116, 144, 0.16);
+  --text-primary: hsl(222, 47%, 11%);
+  --text-secondary: hsl(215, 25%, 27%);
+  --text-muted: hsl(215, 16%, 47%);
+  --emerald: hsl(170, 76%, 31%);
+  --neon-blue: hsl(202, 83%, 36%);
+  --neon-red: hsl(348, 83%, 47%);
+  --neon-yellow: hsl(38, 92%, 42%);
+  --shadow-card: 0 14px 38px rgba(15, 23, 42, 0.12);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -60,6 +79,71 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.005) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
   line-height: 1.5;
+}
+
+body.light-mode {
+  background-image:
+    linear-gradient(rgba(14, 116, 144, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 116, 144, 0.04) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.auth-overlay.auth-hidden {
+  display: none;
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.auth-brand {
+  font-family: var(--font-header);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.auth-copy {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 18px;
+}
+
+.auth-card label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+
+.auth-card .btn-primary {
+  margin-top: 16px;
+}
+
+.auth-error {
+  min-height: 18px;
+  color: var(--neon-red);
+  font-size: 0.75rem;
+  margin-top: 10px;
 }
 
 /* Scrollbars */
@@ -152,6 +236,8 @@ body {
 .header-stats {
   display: flex;
   gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .stat-pill {
@@ -178,6 +264,31 @@ body {
   background-color: var(--neon-red);
   box-shadow: 0 0 10px var(--neon-red);
   animation: pulse-sos 1s infinite alternate;
+}
+
+.session-pill.authenticated #authority-auth-indicator {
+  background-color: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+}
+
+.session-pill.locked #authority-auth-indicator {
+  background-color: var(--neon-red);
+  box-shadow: 0 0 8px var(--neon-red);
+}
+
+.mini-action-btn {
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.mini-action-btn:hover {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
 }
 
 /* 3-Column Interface Dashboard Grid */
@@ -1402,6 +1513,47 @@ input:checked + .slider:before {
   body * {
     visibility: hidden;
   }
+  body.print-ledger-active #ledger-timeline-container,
+  body.print-ledger-active #ledger-timeline-container *,
+  body.print-ledger-active #chain-status-banner,
+  body.print-ledger-active #chain-status-banner *,
+  body.print-ledger-active #blocks-count {
+    visibility: visible;
+  }
+  body.print-ledger-active #ledger-timeline-container {
+    position: absolute;
+    left: 0;
+    top: 48px;
+    width: 100%;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #fff;
+    color: #000;
+  }
+  body.print-ledger-active #chain-status-banner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+    border-color: #000;
+    background: #fff;
+  }
+  body.print-ledger-active .block-item {
+    break-inside: avoid;
+    border-color: #222;
+    color: #000;
+    box-shadow: none;
+  }
+  body.print-ledger-active .block-hash,
+  body.print-ledger-active .block-meta,
+  body.print-ledger-active .block-tx-list {
+    color: #000;
+  }
+  body.print-ledger-active .efir-preview-box,
+  body.print-ledger-active .efir-preview-box * {
+    visibility: hidden !important;
+  }
   .efir-preview-box, .efir-preview-box * {
     visibility: visible;
   }
@@ -1498,3 +1650,102 @@ input:checked + .slider:before {
   color: var(--neon-red) !important;
 }
 
+.incident-history-card {
+  min-height: 180px;
+}
+
+.history-status-line {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.incident-table-wrap {
+  overflow: auto;
+  max-height: 170px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.incident-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.68rem;
+}
+
+.incident-table th,
+.incident-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.incident-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-header);
+  z-index: 1;
+}
+
+.incident-table td:first-child {
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.severity-critical {
+  color: var(--neon-red) !important;
+  font-weight: 800;
+}
+
+.severity-high {
+  color: var(--neon-yellow) !important;
+  font-weight: 700;
+}
+
+.severity-medium {
+  color: var(--neon-blue) !important;
+  font-weight: 700;
+}
+
+.leaflet-heat-pulse {
+  pointer-events: none;
+}
+
+.leaflet-heat-pulse path {
+  animation: pulse-border-red 1.8s infinite alternate;
+}
+
+/* Printable Styles for E-FIR document and Ledger */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .efir-preview-box, .efir-preview-box * {
+    visibility: visible;
+  }
+  .efir-preview-box {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #fff !important;
+    color: #000 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .efir-preview-box div {
+    color: #000 !important;
+  }
+  .efir-blockchain-hash {
+    background: #eee !important;
+    border: 1px solid #ccc !important;
+    color: #111 !important;
+  }
+  .efir-controls {
+    display: none !important;
+  }
+}
