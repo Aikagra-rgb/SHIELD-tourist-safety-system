@@ -1,0 +1,1500 @@
+/* SHIELD - Premium Cyberpunk Security Design System & Stylesheet */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* HSL Color Palette */
+  --bg-primary: hsl(222, 47%, 4%);
+  --bg-secondary: hsl(220, 40%, 8%);
+  --bg-card: rgba(15, 23, 42, 0.75);
+  --bg-glass: rgba(15, 23, 42, 0.45);
+  
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(16, 185, 129, 0.15);
+  --border-error-glow: rgba(239, 68, 68, 0.2);
+  
+  --text-primary: hsl(210, 40%, 98%);
+  --text-secondary: hsl(215, 20%, 75%);
+  --text-muted: hsl(215, 16%, 50%);
+  
+  /* Neon Safety Accents */
+  --emerald: hsl(150, 84%, 48%);
+  --emerald-rgb: 16, 185, 129;
+  --neon-green: hsl(142, 70%, 50%);
+  --neon-red: hsl(350, 85%, 55%);
+  --neon-red-rgb: 239, 68, 68;
+  --neon-blue: hsl(200, 95%, 55%);
+  --neon-yellow: hsl(45, 95%, 52%);
+  --neon-yellow-rgb: 245, 158, 11;
+  
+  /* Fonts */
+  --font-header: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Shadows & Filters */
+  --shadow-neon: 0 0 15px rgba(16, 185, 129, 0.25);
+  --shadow-neon-red: 0 0 20px rgba(239, 68, 68, 0.4);
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-blur: blur(16px);
+  
+  /* Transitions */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(20, 30, 80, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(10, 60, 50, 0.12) 0%, transparent 45%),
+    linear-gradient(rgba(255, 255, 255, 0.005) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.005) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  line-height: 1.5;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.5);
+}
+
+/* Glassmorphic Cards */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* App Layout Grid */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 20px;
+  max-width: 1750px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+/* Header Component */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 24px;
+  background: rgba(10, 15, 30, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  backdrop-filter: var(--glass-blur);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, var(--emerald), var(--neon-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: var(--font-header);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-badge {
+  font-size: 0.65rem;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid var(--emerald);
+  color: var(--emerald);
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+  box-shadow: var(--shadow-neon);
+}
+
+.header-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-family: var(--font-header);
+}
+
+.stat-pill .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+}
+
+.stat-pill .indicator.active-sos {
+  background-color: var(--neon-red);
+  box-shadow: 0 0 10px var(--neon-red);
+  animation: pulse-sos 1s infinite alternate;
+}
+
+/* 3-Column Interface Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 340px 380px 1fr;
+  gap: 20px;
+  flex: 1;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-container {
+    padding: 10px;
+  }
+}
+
+/* Column Wrappers */
+.column-left {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.column-middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.column-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Column Header Titles */
+.column-title {
+  font-family: var(--font-header);
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  letter-spacing: 0.5px;
+}
+
+.column-title span.count-badge {
+  font-size: 0.75rem;
+  background: var(--border-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+/* Forms Styling */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: all var(--transition-fast);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--emerald);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, var(--emerald), hsl(150, 84%, 40%));
+  border: none;
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-neon);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary.mining {
+  background: linear-gradient(135deg, var(--neon-yellow), hsl(45, 95%, 40%));
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  cursor: not-allowed;
+}
+
+/* Visual Holographic Digital ID Card */
+.digital-id-container {
+  perspective: 1000px;
+  margin-top: 15px;
+}
+
+.digital-id-card {
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+  position: relative;
+  background: linear-gradient(135deg, rgba(20, 30, 70, 0.85) 0%, rgba(10, 45, 35, 0.85) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  padding: 14px;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.digital-id-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.05) 50%, transparent 60%);
+  background-size: 200% 200%;
+  animation: shine 4s infinite linear;
+  pointer-events: none;
+}
+
+.id-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.id-header-title h4 {
+  font-family: var(--font-header);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #fff, var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.id-header-title span {
+  font-size: 0.55rem;
+  color: var(--emerald);
+  font-family: var(--font-header);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.id-chip {
+  width: 24px;
+  height: 18px;
+  background: linear-gradient(135deg, #ffd700, #b8860b);
+  border-radius: 3px;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.4);
+}
+
+.id-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.id-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.id-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.id-row label {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.id-row span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-header);
+}
+
+.id-qr {
+  width: 70px;
+  height: 70px;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.id-qr svg {
+  width: 100%;
+  height: 100%;
+}
+
+.id-footer {
+  position: absolute;
+  bottom: 8px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 6px;
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+/* Blockchain Ledger Component */
+.ledger-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.block-item {
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 10px;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.block-item.mined {
+  border-left: 3px solid var(--emerald);
+}
+
+.block-item.tampered {
+  border-color: var(--neon-red) !important;
+  border-left: 3px solid var(--neon-red) !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.block-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.block-hash {
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-hash span {
+  color: var(--emerald);
+}
+
+.block-item.tampered .block-hash span {
+  color: var(--neon-red);
+}
+
+.block-tx-list {
+  font-size: 0.65rem;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.tx-tag {
+  background: rgba(255,255,255,0.05);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.55rem;
+  color: var(--neon-blue);
+  font-weight: 600;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.tx-tag.emergency {
+  color: var(--neon-red);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.blockchain-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-secondary {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--neon-red);
+  color: var(--neon-red);
+}
+
+.chain-status-banner {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  border: 1px solid;
+}
+
+.chain-status-banner.valid {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--emerald);
+}
+
+.chain-status-banner.invalid {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--neon-red);
+  animation: pulse-border 1.5s infinite;
+}
+
+/* Smartphone Mockup Container */
+.smartphone-wrapper {
+  width: 330px;
+  height: 640px;
+  background: #0f172a;
+  border: 10px solid #334155;
+  border-radius: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.smartphone-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 30px;
+  pointer-events: none;
+}
+
+.phone-notch {
+  width: 140px;
+  height: 20px;
+  background: #334155;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.phone-camera {
+  width: 8px;
+  height: 8px;
+  background: #1e293b;
+  border-radius: 50%;
+  box-shadow: inset 0 0 2px rgba(255,255,255,0.3);
+}
+
+.phone-status-bar {
+  height: 36px;
+  padding: 18px 20px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  z-index: 90;
+  background: rgba(10, 15, 30, 0.6);
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.phone-screen {
+  flex: 1;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+  background: linear-gradient(180deg, hsl(222, 47%, 5%) 0%, hsl(220, 30%, 10%) 100%);
+}
+
+/* Smartphone SOS Overlay when distressed */
+.phone-sos-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(239, 68, 68, 0.15);
+  box-shadow: inset 0 0 40px rgba(239, 68, 68, 0.4);
+  pointer-events: none;
+  z-index: 80;
+  animation: pulse-emergency-overlay 1.5s infinite;
+  display: none;
+}
+
+/* Smartphone Components */
+.phone-app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.phone-logo {
+  font-family: var(--font-header);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phone-logo .dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--emerald);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--emerald);
+}
+
+.phone-logo.sos-active .dot {
+  background-color: var(--neon-red);
+  box-shadow: 0 0 8px var(--neon-red);
+  animation: pulse-sos 0.6s infinite alternate;
+}
+
+.phone-lang-selector select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.65rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Circular Safety Score Gauge */
+.safety-gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.safety-gauge-svg {
+  width: 110px;
+  height: 110px;
+  transform: rotate(-90deg);
+}
+
+.gauge-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.04);
+  stroke-width: 10;
+}
+
+.gauge-fill {
+  fill: none;
+  stroke: var(--emerald);
+  stroke-width: 10;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease, stroke 0.6s ease;
+}
+
+.safety-score-number {
+  position: absolute;
+  top: 95px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.score-val {
+  font-family: var(--font-header);
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-lbl {
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.safety-status-badge {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--emerald);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+}
+
+.safety-status-badge.sos {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--neon-red);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+/* Panic SOS Button */
+.sos-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px 0;
+}
+
+.sos-trigger-btn {
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon-red), #b91c1c);
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4), var(--shadow-neon-red);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  transition: all var(--transition-fast);
+  z-index: 10;
+  user-select: none;
+}
+
+.sos-trigger-btn.pulse-active {
+  animation: pulse-sos-ring 1.5s infinite;
+}
+
+.sos-trigger-btn span.sos-txt {
+  font-family: var(--font-header);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.sos-trigger-btn span.sos-subtxt {
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.sos-trigger-btn:hover {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+
+.sos-trigger-btn:active {
+  transform: scale(0.97);
+}
+
+/* IoT Vitals Widget inside smartphone */
+.iot-vitals-widget {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: auto;
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.vital-box {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vital-icon {
+  font-size: 1.1rem;
+}
+
+.vital-icon.heart {
+  color: var(--neon-red);
+  animation: heartbeat 0.8s infinite alternate;
+}
+
+.vital-icon.oxygen {
+  color: var(--neon-blue);
+}
+
+.vital-value {
+  display: flex;
+  flex-direction: column;
+}
+
+.vital-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.vital-lbl {
+  font-size: 0.45rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.opt-in-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+}
+
+.opt-in-label {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+/* Sliders to simulate anomalies on IoT */
+.simulation-panel {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.sim-slider-group {
+  margin-bottom: 8px;
+}
+
+.sim-slider-group label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.sim-slider-group label span.val {
+  font-family: monospace;
+  color: var(--emerald);
+  font-weight: 600;
+}
+
+.sim-slider-group label span.val.warning {
+  color: var(--neon-yellow);
+}
+
+.sim-slider-group label span.val.critical {
+  color: var(--neon-red);
+}
+
+.sim-slider {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.sim-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--emerald);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--emerald);
+}
+
+/* Police Command Center Layout */
+.command-center-layout {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 20px;
+}
+
+/* Vector Map Styling */
+.map-canvas-container {
+  height: 380px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #0b111e;
+  position: relative;
+}
+
+.map-svg {
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+/* Map Elements styling */
+.map-land {
+  fill: #111a2e;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 1.5;
+}
+
+.map-forest {
+  fill: #0c231c;
+  stroke: rgba(16, 185, 129, 0.04);
+}
+
+.map-lake {
+  fill: #1e3a8a;
+  opacity: 0.4;
+}
+
+.map-route {
+  stroke: rgba(255,255,255,0.1);
+  stroke-width: 2;
+  stroke-dasharray: 4, 4;
+  fill: none;
+}
+
+.map-route-planned {
+  stroke: var(--neon-blue);
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+  opacity: 0.6;
+}
+
+.map-route-actual {
+  stroke: var(--emerald);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+
+.map-geofence {
+  fill: rgba(239, 68, 68, 0.08);
+  stroke: var(--neon-red);
+  stroke-dasharray: 4, 3;
+  stroke-width: 1.5;
+  pointer-events: none;
+  animation: pulse-border-red 2s infinite alternate;
+}
+
+.map-checkpoint {
+  fill: var(--neon-blue);
+  stroke: rgba(255,255,255,0.3);
+  stroke-width: 1;
+}
+
+.map-tourist-cursor {
+  cursor: grab;
+}
+
+.map-tourist-cursor:active {
+  cursor: grabbing;
+}
+
+.tourist-marker-dot {
+  fill: var(--emerald);
+  stroke: #fff;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px var(--emerald));
+}
+
+.tourist-marker-dot.sos-active {
+  fill: var(--neon-red);
+  filter: drop-shadow(0 0 10px var(--neon-red));
+}
+
+.tourist-marker-pulse {
+  fill: none;
+  stroke: var(--emerald);
+  stroke-width: 1;
+  animation: ripple-pulse 1.5s infinite ease-out;
+}
+
+.tourist-marker-pulse.sos-active {
+  stroke: var(--neon-red);
+}
+
+.map-checkpoint-label {
+  fill: var(--text-muted);
+  font-size: 8px;
+  font-family: var(--font-header);
+  font-weight: 500;
+}
+
+/* Map Scan line HUD Overlay */
+.map-scan-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(16,185,129,0), rgba(16,185,129,0.35) 50%, rgba(16,185,129,0));
+  animation: map-scan 6s infinite linear;
+  pointer-events: none;
+}
+
+.map-overlay-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  font-family: monospace;
+}
+
+/* Police Active Alerts Dashboard Section */
+.police-row-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1000px) {
+  .police-row-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+.alert-feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.alert-notification {
+  display: flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  align-items: flex-start;
+  transition: all var(--transition-fast);
+}
+
+.alert-notification:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.alert-notification.sos {
+  border-color: var(--neon-red);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.alert-notification.warning {
+  border-color: var(--neon-yellow);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.alert-badge-icon {
+  font-size: 1.1rem;
+}
+
+.alert-notif-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.alert-notif-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.alert-notif-desc {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+
+.alert-notif-time {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* AI Detection Panel */
+.ai-telemetry-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.ai-status-lbl {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.ai-status-val {
+  font-family: monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ai-status-val.safe {
+  color: var(--emerald);
+}
+
+.ai-status-val.warning {
+  color: var(--neon-yellow);
+}
+
+.ai-status-val.danger {
+  color: var(--neon-red);
+}
+
+/* Automated E-FIR Generator Form */
+.efir-panel {
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 15px;
+  background: rgba(255,255,255,0.01);
+}
+
+.efir-preview-box {
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 20px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  height: 250px;
+  overflow-y: auto;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.efir-title {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-bottom: 2px double #0f172a;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.efir-meta-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 6px;
+}
+
+.efir-section-title {
+  font-weight: bold;
+  text-decoration: underline;
+  margin: 8px 0 4px;
+}
+
+.efir-blockchain-hash {
+  font-size: 0.6rem;
+  color: #64748b;
+  word-break: break-all;
+}
+
+.efir-watermark {
+  position: absolute;
+  font-size: 3rem;
+  font-weight: 900;
+  opacity: 0.04;
+  color: #0f172a;
+  transform: rotate(-30deg) translate(20px, 60px);
+  pointer-events: none;
+  letter-spacing: 5px;
+}
+
+/* Controls block */
+.efir-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* Animations */
+@keyframes pulse-sos {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse-sos-ring {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), var(--shadow-neon-red); }
+  70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0), var(--shadow-neon-red); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), var(--shadow-neon-red); }
+}
+
+@keyframes ripple-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(5); opacity: 0; }
+}
+
+@keyframes map-scan {
+  0% { top: 0; }
+  50% { top: 100%; }
+  100% { top: 0; }
+}
+
+@keyframes shine {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(0.9); }
+}
+
+@keyframes pulse-emergency-overlay {
+  0% { opacity: 0.1; }
+  50% { opacity: 0.35; }
+  100% { opacity: 0.1; }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+  40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+@keyframes pulse-border-red {
+  0% { fill: rgba(239, 68, 68, 0.05); stroke-opacity: 0.4; }
+  100% { fill: rgba(239, 68, 68, 0.12); stroke-opacity: 1; }
+}
+
+@keyframes pulse-border {
+  0% { border-color: rgba(239, 68, 68, 0.3); }
+  50% { border-color: rgba(239, 68, 68, 0.9); box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
+  100% { border-color: rgba(239, 68, 68, 0.3); }
+}
+
+/* Form switch helper toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255,255,255,0.1);
+  border-radius: 34px;
+  transition: .2s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .2s;
+}
+
+input:checked + .slider {
+  background-color: var(--emerald);
+}
+
+input:checked + .slider:before {
+  transform: translateX(12px);
+}
+
+/* Sound notification helper button */
+.mute-hud-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color var(--transition-fast);
+}
+
+.mute-hud-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Printable Styles for E-FIR document */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .efir-preview-box, .efir-preview-box * {
+    visibility: visible;
+  }
+  .efir-preview-box {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
+    border: none;
+    background: #fff;
+    color: #000;
+    box-shadow: none;
+    font-size: 10pt;
+  }
+}
+
+/* Production Webcam & KYC Biometric Elements styling */
+.webcam-capture-viewport {
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #020617;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.id-biometric-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Leaflet dark custom tiles filter matching the dashboard */
+.leaflet-container {
+  background-color: #0b111e !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-body) !important;
+}
+
+.leaflet-tile-container img {
+  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(85%) saturate(110%) !important;
+  opacity: 0.75;
+}
+
+.leaflet-bar {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--bg-card) !important;
+  box-shadow: var(--shadow-card) !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+
+.leaflet-bar a {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--emerald) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  font-size: 0.75rem !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.leaflet-popup-content {
+  margin: 10px 14px !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--neon-red) !important;
+}
+

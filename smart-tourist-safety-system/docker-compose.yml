@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # 🐘 High-Performance Geospatial Database (PostGIS)
+  postgres-postgis:
+    image: postgis/postgis:15-3.3
+    container_name: shield-postgres-postgis
+    environment:
+      POSTGRES_USER: shield_admin
+      POSTGRES_PASSWORD: secure_shield_99
+      POSTGRES_DB: shield_gis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - shield-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shield_admin -d shield_gis_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 🧠 In-Memory Flash Cache Database (Redis)
+  redis-cache:
+    image: redis:7-alpine
+    container_name: shield-redis-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - shield-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 🤖 Python AI Anomaly Detection Service
+  ai-anomaly-service:
+    build:
+      context: ./backend-ai-service
+      dockerfile: ../backend-ai-service/Dockerfile
+    image: shield-ai-anomaly-service:latest
+    container_name: shield-ai-anomaly-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    depends_on:
+      - redis-cache
+    networks:
+      - shield-net
+    restart: always
+
+  # 🗺️ Node.js Express / PostGIS Geospatial indexer
+  gis-geofence-service:
+    build:
+      context: ./backend-gis-service
+      dockerfile: ../backend-gis-service/Dockerfile
+    image: shield-gis-geofence-service:latest
+    container_name: shield-gis-geofence-service
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_USER=shield_admin
+      - DB_PASSWORD=secure_shield_99
+      - DB_NAME=shield_gis_db
+      - DB_HOST=postgres-postgis
+      - DB_PORT=5432
+    depends_on:
+      postgres-postgis:
+        condition: service_healthy
+    networks:
+      - shield-net
+    restart: always
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  shield-net:
+    driver: bridge

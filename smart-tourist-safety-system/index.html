@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHIELD - Production Real-Time Tourist Safety Monitoring & Incident Response System</title>
+  <meta name="description" content="AI, Blockchain, and Geo-Fencing powered Tourist Safety Ecosystem and Incident Management Command Center.">
+  
+  <!-- Leaflet GIS Map CSS CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom Cyberpunk Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Scan HUD Overlay for premium look -->
+  <div class="map-scan-line"></div>
+
+  <div class="app-container">
+    
+    <!-- Top Command Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">🛡️ SHIELD <span class="brand-badge" style="background: rgba(239, 68, 68, 0.1); border-color: var(--neon-red); color: var(--neon-red);">PRODUCTION LIVE</span></div>
+      </div>
+      
+      <div class="header-stats">
+        <!-- Enterprise Mode Gateways Switch -->
+        <div class="stat-pill" style="border-color: var(--neon-blue); background: rgba(59, 130, 246, 0.05); box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);">
+          <span>☁️ Enterprise Core:</span>
+          <label class="switch" style="margin-left: 6px; width: 28px; height: 16px;">
+            <input type="checkbox" id="enterprise-mode-switch">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="stat-pill">
+          <div class="indicator" id="blockchain-indicator"></div>
+          <span>Consortium Ledger: <strong>ACTIVE SECURITY</strong></span>
+        </div>
+        <div class="stat-pill">
+          <div class="indicator" id="tourists-count-indicator"></div>
+          <span>Active Tourists: <strong id="header-active-count">0</strong></span>
+        </div>
+        <div class="stat-pill">
+          <div class="indicator" id="sos-count-indicator"></div>
+          <span>Active Alerts: <strong id="header-alert-count" style="color: var(--text-primary)">0</strong></span>
+        </div>
+        <button class="mute-hud-btn" id="audio-mute-toggle" title="Toggle Sound Warnings">🔊</button>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- COLUMN 1: TOURIST REGISTRY & BLOCKCHAIN AUDIT -->
+      <aside class="column-left">
+        
+        <!-- Registration Card -->
+        <section class="card" id="registry-section">
+          <h3 class="column-title">
+            <span>🛂 Production Tourist ID Registry</span>
+          </h3>
+          <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 10px;">
+            Securely issue cryptographically verified tourist IDs with live webcam biometric photo validation.
+          </p>
+          
+          <!-- Webcam KYC capture containers -->
+          <div class="webcam-capture-viewport" style="position: relative; margin-bottom: 10px; border-radius: 8px; overflow: hidden; background: #000; min-height: 2px;">
+            <video id="webcam-stream" autoplay playsinline style="width: 100%; height: 140px; display: none; object-fit: cover; border: 1px solid var(--border-color); border-radius: 8px;"></video>
+            <canvas id="captured-canvas" style="width: 100%; height: 140px; display: none; object-fit: cover; border: 1px solid var(--border-color); border-radius: 8px;"></canvas>
+            <div id="camera-overlay-shutter" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; pointer-events: none; color: #fff; font-size: 0.8rem; font-weight: bold; text-shadow: 0 2px 4px #000;">📸 INGESTING BIOMETRIC FACE FRAME...</div>
+          </div>
+          
+          <div class="webcam-controls" style="margin-bottom: 12px; display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" id="btn-toggle-camera" style="flex: 1; font-size: 0.75rem;">📷 Start Webcam</button>
+            <button type="button" class="btn-primary" id="btn-snap-camera" style="flex: 1; font-size: 0.75rem; display: none; background: linear-gradient(135deg, var(--neon-blue), #1d4ed8); box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);">📸 Capture Face</button>
+          </div>
+
+          <form id="kyc-form" onsubmit="event.preventDefault();">
+            <div class="form-group">
+              <label for="tourist-name">Full Name</label>
+              <input type="text" id="tourist-name" class="form-control" placeholder="E.g., Devraj Baruah" required value="Devraj Baruah">
+            </div>
+            
+            <div class="form-group">
+              <label for="tourist-kyc">KYC Document (Aadhaar / Passport)</label>
+              <input type="text" id="tourist-kyc" class="form-control" placeholder="Aadhaar No. (12 Digit) or Passport" required value="4820 9021 5530">
+            </div>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label for="tourist-origin">State Entry Point</label>
+                <select id="tourist-origin" class="form-control">
+                  <option value="Guwahati Airport">Guwahati AP</option>
+                  <option value="Umroi Airport (Shillong)" selected>Umroi AP</option>
+                  <option value="Jorhat Rail Station">Jorhat Rail</option>
+                  <option value="Moreh Checkpost">Moreh Border</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="itinerary-days">Duration of Visit</label>
+                <select id="itinerary-days" class="form-control">
+                  <option value="3">3 Days</option>
+                  <option value="7" selected>7 Days</option>
+                  <option value="14">14 Days</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="emergency-contact">Emergency Contact No.</label>
+              <input type="text" id="emergency-contact" class="form-control" placeholder="Phone with country code" required value="+91 94350-98210">
+            </div>
+            
+            <button type="submit" class="btn-primary" id="btn-mint-id">
+              <span>🔗 Mint Blockchain ID</span>
+            </button>
+          </form>
+          
+          <!-- Holographic Digital ID Card Cardboard -->
+          <div class="digital-id-container">
+            <div class="digital-id-card" id="id-card-element" style="display: none; height: 200px;">
+              <div class="id-header">
+                <div class="id-header-title">
+                  <h4>DIGITAL TOURIST ID</h4>
+                  <span>State Safety Board</span>
+                </div>
+                <div class="id-chip"></div>
+              </div>
+              <div class="id-body" style="align-items: flex-start; gap: 8px;">
+                <!-- Biometric snap slot -->
+                <div class="id-biometric-photo" id="card-biometric-photo" style="width: 55px; height: 65px; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 4px; display: flex; justify-content: center; align-items: center; overflow: hidden; font-size: 0.4rem; color: var(--text-muted);">
+                  FACE KYC
+                </div>
+                
+                <div class="id-details" style="flex: 1;">
+                  <div class="id-row">
+                    <label>Tourist</label>
+                    <span id="card-tourist-name" style="font-size: 0.7rem; font-weight: 700;">Devraj Baruah</span>
+                  </div>
+                  <div class="id-row">
+                    <label>Assigned ID Hash</label>
+                    <span id="card-id-hash" style="font-family: monospace; font-size: 0.5rem; word-break: break-all;">SHIELD-8f2a...</span>
+                  </div>
+                  <div class="id-row" style="margin-top: 2px;">
+                    <label>Validity</label>
+                    <span id="card-validity" style="color: var(--emerald); font-size: 0.65rem;">ACTIVE (7 Days)</span>
+                  </div>
+                </div>
+                <div class="id-qr" id="card-qr-box" style="width: 55px; height: 55px; flex-shrink: 0;">
+                  <!-- Custom SVG QR code will be generated here -->
+                </div>
+              </div>
+              <div class="id-footer">
+                <span>CONSORTIUM SECURED</span>
+                <span id="card-entry-point">UMROI AP</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Blockchain Ledger Explorer -->
+        <section class="card" style="flex: 1;">
+          <h3 class="column-title">
+            <span>⛓️ Blockchain Audit Ledger</span>
+            <span class="count-badge" id="blocks-count">1</span>
+          </h3>
+          
+          <div class="chain-status-banner valid" id="chain-status-banner">
+            <span class="dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); display:inline-block;"></span>
+            <span id="chain-status-text">Ledger cryptographically intact.</span>
+          </div>
+          
+          <div class="ledger-timeline" id="ledger-timeline-container" style="max-height: 230px;">
+            <!-- Blockchain blocks will be injected here in real-time -->
+          </div>
+          
+          <div class="blockchain-actions">
+            <button class="btn-secondary" id="btn-audit-ledger" title="Re-verify block cryptographic linkages">
+              🔄 Audit Ledger
+            </button>
+            <button class="btn-secondary danger" id="btn-tamper-ledger" title="Simulate a security intrusion attempt">
+              ⚡ Inject Tamper
+            </button>
+          </div>
+        </section>
+
+      </aside>
+
+      <!-- COLUMN 2: INTERACTIVE TOURIST SMARTPHONE APP SIMULATOR -->
+      <main class="column-middle">
+        <h3 class="column-title" style="width: 100%; border: none; margin-bottom: 0px; justify-content: center; font-size: 0.95rem;">
+          <span>📱 Tourist Mobile App Simulator</span>
+        </h3>
+        
+        <!-- Smartphone Container -->
+        <div class="smartphone-wrapper">
+          
+          <!-- SOS Flashing emergency overlay -->
+          <div class="phone-sos-overlay" id="sos-overlay"></div>
+          
+          <div class="phone-notch">
+            <div class="phone-camera"></div>
+          </div>
+          
+          <!-- Simulated Status Bar -->
+          <div class="phone-status-bar">
+            <span id="phone-time">13:47</span>
+            <div class="status-right">
+              <span>📶 5G</span>
+              <span id="phone-battery-status">🔋 98%</span>
+            </div>
+          </div>
+          
+          <!-- Inside Smartphone Screen -->
+          <div class="phone-screen" id="phone-screen-container">
+            
+            <div class="phone-app-header">
+              <div class="phone-logo" id="phone-logo-element">
+                <span class="dot"></span>
+                <span id="t-app-name">SHIELD Mobile Safety</span>
+              </div>
+              <div class="phone-lang-selector">
+                <select id="lang-selector" onchange="translatePhoneApp(this.value)" title="Choose app language">
+                  <option value="en">English</option>
+                  <option value="hi">हिन्दी (Hindi)</option>
+                  <option value="bn">বাংলা (Bengali)</option>
+                  <option value="as">অসমীয়া (Assamese)</option>
+                  <option value="mni">มৈতैलोन् (Manipuri)</option>
+                  <option value="kha">Khasi</option>
+                  <option value="miz">Mizo</option>
+                  <option value="bod">बड़ो (Bodo)</option>
+                  <option value="nep">नेपाली (Nepali)</option>
+                  <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                  <option value="te">తెలుగు (Telugu)</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Voice Recognition active banner -->
+            <div id="speech-recognition-active-badge" class="stat-pill" style="display: flex; gap: 6px; padding: 2px 8px; font-size: 0.55rem; background: rgba(16, 185, 129, 0.08); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 4px; margin-bottom: 6px; justify-content: center; width: 100%; font-weight: 500;">
+              🎙️ Live Voice SOS Enabled ("Help!")
+            </div>
+
+            <!-- Circular Safety Score Gauge -->
+            <div class="safety-gauge-wrapper">
+              <svg class="safety-gauge-svg">
+                <circle class="gauge-bg" cx="55" cy="55" r="45"></circle>
+                <circle class="gauge-fill" id="safety-gauge-fill" cx="55" cy="55" r="45"></circle>
+              </svg>
+              <div class="safety-score-number">
+                <span class="score-val" id="safety-score-val">96</span>
+                <span class="score-lbl" id="t-safety-score">Safety Score</span>
+              </div>
+              <span class="safety-status-badge" id="safety-status-badge">SAFE STATUS</span>
+            </div>
+            
+            <!-- Pulse emergency trigger button -->
+            <div class="sos-button-container">
+              <button class="sos-trigger-btn" id="panic-sos-btn">
+                <span class="sos-txt" id="t-panic-sos-txt">SOS</span>
+                <span class="sos-subtxt" id="t-panic-sos-subtxt">Tap to SOS</span>
+              </button>
+            </div>
+            
+            <!-- Live tracking state indicator -->
+            <div class="opt-in-panel">
+              <span class="opt-in-label" id="t-gps-status">Live GPS Tracking</span>
+              <label class="switch">
+                <input type="checkbox" id="gps-tracking-switch" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <p style="font-size: 0.52rem; color: var(--text-muted); text-align: center; margin: 6px 0; line-height: 1.25;" id="t-privacy-notice">
+              Data is end-to-end encrypted and blockchain registered. Location sharing is opt-in and restricted to authorized safety teams.
+            </p>
+            
+            <!-- IoT Smart Band Widgets -->
+            <div class="iot-vitals-widget">
+              <span style="font-size: 0.6rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;" id="t-iot-vitals">IoT Smart Band Vitals</span>
+              
+              <div class="vitals-grid">
+                <div class="vital-box">
+                  <span class="vital-icon heart">❤️</span>
+                  <div class="vital-value">
+                    <span class="vital-val" id="vital-heart">72 BPM</span>
+                    <span class="vital-lbl" id="t-heart-rate">Heart Rate</span>
+                  </div>
+                </div>
+                <div class="vital-box">
+                  <span class="vital-icon oxygen">🩺</span>
+                  <div class="vital-value">
+                    <span class="vital-val" id="vital-spo2">98%</span>
+                    <span class="vital-lbl" id="t-oxygen">Oxygen (SpO2)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Telemetry Simulation & Intrusions -->
+        <section class="simulation-panel">
+          <h4 style="font-family: var(--font-header); font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px;">
+            🛠️ Telemetry & GPS Route Simulator
+          </h4>
+          
+          <div class="sim-slider-group">
+            <label>
+              <span>Simulated Heart Rate</span>
+              <span class="val" id="sim-val-heart">72 BPM</span>
+            </label>
+            <input type="range" id="sim-slider-heart" class="sim-slider" min="50" max="160" value="72">
+          </div>
+          
+          <div class="sim-slider-group">
+            <label>
+              <span>Simulated SpO2 (Oxygen)</span>
+              <span class="val" id="sim-val-spo2">98%</span>
+            </label>
+            <input type="range" id="sim-slider-spo2" class="sim-slider" min="75" max="100" value="98">
+          </div>
+
+          <div class="sim-slider-group">
+            <label>
+              <span>Phone Battery Level</span>
+              <span class="val" id="sim-val-phone-batt">98%</span>
+            </label>
+            <input type="range" id="sim-slider-phone-batt" class="sim-slider" min="5" max="100" value="98">
+          </div>
+          
+          <!-- Device GPS hardware integration toggle -->
+          <div class="opt-in-panel" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15);">
+            <span class="opt-in-label" style="font-size: 0.65rem; color: var(--text-primary); font-weight: 500;">🌍 Stream Real Device GPS Sensor</span>
+            <label class="switch">
+              <input type="checkbox" id="real-gps-tracking-switch">
+              <span class="slider" style="background-color: rgba(255,255,255,0.1);"></span>
+            </label>
+          </div>
+          
+          <p style="font-size: 0.62rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.3;">
+            🚀 <strong>Production GIS Map:</strong> The map is powered by a real **Leaflet GIS Map Engine**! Drag the marker, tap a coordinate, or toggle **Real Device GPS** to watch actual sat tracker calculations.
+          </p>
+        </section>
+
+      </main>
+
+      <!-- COLUMN 3: STATE POLICE COMMAND & CONTROL CENTER -->
+      <section class="column-right">
+        
+        <!-- Command Map -->
+        <div class="card command-center-layout" style="height: 480px;">
+          <div class="column-title" style="margin-bottom: 5px; border: none; padding: 0; justify-content: space-between;">
+            <span>🗺️ GIS Tourism Police Live Control Center</span>
+            <div style="font-size: 0.7rem; display: flex; gap: 12px; align-items: center;">
+              <span style="color: var(--neon-blue);">● Route corridor</span>
+              <span style="color: var(--neon-red);">▲ Restricted Boundaries</span>
+            </div>
+          </div>
+          
+          <!-- leaflet map div replacing SVG -->
+          <div class="map-canvas-container" style="flex: 1; height: 100%;">
+            <div class="map-scan-line"></div>
+            
+            <div class="map-overlay-hud" style="z-index: 1000;">
+              REAL-TIME GIS TRACKING ACTIVE<br>
+              COORD: <span id="map-gps-coord" style="color: var(--emerald)">25.5788, 91.8931</span><br>
+              GEOFENCE: <span id="map-geofence-hud" style="color: var(--emerald)">SECURED</span>
+            </div>
+
+            <div id="leaflet-map-element" style="width: 100%; height: 100%; background: #0c111d;"></div>
+          </div>
+        </div>
+
+        <!-- Alerts and AI and FIR grids -->
+        <div class="police-row-bottom">
+          
+          <!-- Column Right - Bottom Left: Real-Time Alerts Feed & AI Telemetry -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <!-- Real-Time Alerts Feed -->
+            <div class="card" style="flex: 1;">
+              <h4 class="column-title" style="font-size: 0.85rem; margin-bottom: 10px;">
+                <span>🚨 Active Dispatch Alert Stream</span>
+              </h4>
+              <div class="alert-feed-container" id="alert-feed-box" style="max-height: 180px;">
+                <div class="alert-notification" id="placeholder-notif">
+                  <span class="alert-badge-icon">ℹ️</span>
+                  <div class="alert-notif-body">
+                    <div class="alert-notif-header">
+                      <span>Monitoring Service Ready</span>
+                      <span>13:45</span>
+                    </div>
+                    <span class="alert-notif-desc">Biometric and telemetry stream awaiting digital ID registry connection.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Telemetry Detection -->
+            <div class="card">
+              <h4 class="column-title" style="font-size: 0.85rem; margin-bottom: 10px;">
+                <span>🤖 AI Behaviour & Telemetry Center</span>
+              </h4>
+              <div class="ai-telemetry-panel">
+                <div class="ai-status-row">
+                  <span class="ai-status-lbl">GPS Route Deviation Indicator</span>
+                  <span class="ai-status-val safe" id="ai-val-deviation">0% (ON-ROUTE)</span>
+                </div>
+                <div class="ai-status-row">
+                  <span class="ai-status-lbl">Sudden Signal Loss / Inactivity Meter</span>
+                  <span class="ai-status-val safe" id="ai-val-inactivity">ACTIVE (OK)</span>
+                </div>
+                <div class="ai-status-row">
+                  <span class="ai-status-lbl">Vital distress Pattern Detector</span>
+                  <span class="ai-status-val safe" id="ai-val-vitals">STABLE SIGNAL</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Column Right - Bottom Right: Automated Legal E-FIR System -->
+          <div class="card efir-panel">
+            <h4 class="column-title" style="font-size: 0.85rem; margin-bottom: 10px;">
+              <span>📝 Automated Incident E-FIR System</span>
+            </h4>
+            <p style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 10px;">
+              Generate and log an official printable First Information Report on the blockchain in case of distress.
+            </p>
+
+            <div class="efir-preview-box" id="efir-doc-box" style="height: 190px;">
+              <div class="efir-watermark">CONFIDENTIAL</div>
+              <div class="efir-title">FIRST INFORMATION REPORT (E-FIR)</div>
+              <div style="text-align: center; font-size: 0.6rem; font-weight: bold; margin-bottom: 10px;">
+                ISSUED BY: DEPT OF TOURISM POLICE // UNDER IT SEC 80A
+              </div>
+              
+              <div class="efir-meta-block">
+                <div><strong>FIR NO:</strong> SHIELD-FIR-PENDING</div>
+                <div style="text-align: right;"><strong>DATE:</strong> 2026-05-24</div>
+                <div><strong>JURISDICTION:</strong> EAST KHASI HILLS</div>
+                <div style="text-align: right;"><strong>STATUS:</strong> DRAFT</div>
+              </div>
+
+              <div class="efir-section-title">1. COMPLAINANT / SUBJECT PARTICULARS</div>
+              <div><strong>NAME:</strong> Devraj Baruah</div>
+              <div><strong>KYC DOC:</strong> 4820 9021 5530 (Verified Aadhaar)</div>
+              <div><strong>CONTACT:</strong> +91 94350-98210</div>
+
+              <div class="efir-section-title">2. INCIDENT & SIGNAL TELEMETRY LOG</div>
+              <div><strong>ENTRY POINT:</strong> Umroi Airport</div>
+              <div><strong>LAST GPS COORD:</strong> 25.5788, 91.8931</div>
+              <div><strong>IOT VITALS SIGN:</strong> HR: 72 BPM | SpO2: 98% (Stable)</div>
+              <div><strong>DEVICE BATTERY:</strong> 98%</div>
+
+              <div class="efir-section-title">3. DETECTED BEHAVIOR ANOMALIES</div>
+              <div>- Standard monitoring initialized. No distress triggers recorded in active queue.</div>
+
+              <div class="efir-section-title">4. BLOCKCHAIN FORENSIC SIGNATURE</div>
+              <div class="efir-blockchain-hash" id="efir-blockchain-hash">
+                Awaiting active incident registry.
+              </div>
+            </div>
+
+            <div class="efir-controls">
+              <button class="btn-primary" id="btn-file-efir" disabled style="background: var(--bg-tertiary); box-shadow: none; cursor: not-allowed;">
+                ✏️ File Legal E-FIR
+              </button>
+              <button class="btn-secondary" id="btn-print-efir" style="flex: 1;" disabled>
+                🖨️ Print / Save Document
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </div>
+
+  <!-- Leaflet GIS Map JS Engine CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Loading scripts globally -->
+  <script src="languages.js"></script>
+  <script src="blockchain.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
