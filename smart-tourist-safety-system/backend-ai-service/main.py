@@ -1,21 +1,28 @@
 # SHIELD - Python AI Telemetry & Behavior Anomaly Service
-# Exposes real-time analytics to determine tourist safety risks
+# Uses a real scikit-learn Isolation Forest for unsupervised anomaly detection.
+# The model is seeded with synthetic baseline data on startup and retrained
+# incrementally as new telemetry arrives — no labelled data required.
 
 import time
 import math
-from typing import List, Dict, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+import numpy as np
+from typing import List, Dict
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
 
 app = FastAPI(
     title="SHIELD AI Telemetry & Anomaly Engine",
-    description="Real-time predictive analytics and heuristics monitoring tourist deviations & vital signals.",
-    version="1.0.0"
+    description=(
+        "Real-time unsupervised anomaly detection using scikit-learn Isolation Forest. "
+        "Ingests multi-dimensional tourist telemetry (GPS deviation, heart-rate, SpO2, battery) "
+        "and returns a calibrated threat score with severity classification."
+    ),
+    version="2.0.0",
 )
 
-# Enable CORS for frontend interface
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,7 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Telemetry data payload model
+# ---------------------------------------------------------------------------
+# Data models
+# ---------------------------------------------------------------------------
+
 class Coordinate(BaseModel):
     lat: float
     lon: float
@@ -38,157 +48,217 @@ class TelemetryPayload(BaseModel):
     battery: int
     timestamp: str
 
-# Redis / Database mock cache
-ACTIVE_ANOMALY_REGISTRY = {}
+# ---------------------------------------------------------------------------
+# Isolation Forest — seeded with realistic baseline tourist telemetry
+# Features: [route_deviation_km, heart_rate, spo2, battery, hr_variability]
+# ---------------------------------------------------------------------------
 
-def calculate_distance(p1: Coordinate, p2: Coordinate) -> float:
+def _generate_baseline() -> np.ndarray:
     """
-    Calculate Haversine distance between two GPS coordinates in kilometers.
+    Synthesise ~400 'normal' tourist telemetry samples so the model has a
+    meaningful reference distribution from the moment it starts.
+    Normal ranges:  deviation 0–1 km | HR 60–100 | SpO2 93–99 | batt 30–100
     """
-    R = 6371.0 # Earth radius
+    rng = np.random.default_rng(42)
+    n = 400
+    deviation   = rng.uniform(0.0, 1.0, n)
+    heart_rate  = rng.uniform(60, 100, n)
+    spo2        = rng.uniform(93, 99, n)
+    battery     = rng.uniform(30, 100, n)
+    hrv         = rng.uniform(30, 80, n)          # heart-rate variability proxy
+    return np.column_stack([deviation, heart_rate, spo2, battery, hrv])
+
+_baseline = _generate_baseline()
+_scaler   = StandardScaler().fit(_baseline)
+
+# contamination=0.05 → model expects ~5 % of incoming data to be anomalous
+_model = IsolationForest(
+    n_estimators=150,
+    contamination=0.05,
+    random_state=42,
+    n_jobs=-1,
+)
+_model.fit(_scaler.transform(_baseline))
+
+# Rolling buffer — retrain every 50 new readings to keep the model fresh
+_telemetry_buffer: List[List[float]] = []
+RETRAIN_EVERY = 50
+
+# In-memory registry of processed payloads
+ACTIVE_ANOMALY_REGISTRY: Dict[int, dict] = {}
+
+# ---------------------------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------------------------
+
+def _haversine_km(p1: Coordinate, p2: Coordinate) -> float:
+    R = 6371.0
     lat1, lon1 = math.radians(p1.lat), math.radians(p1.lon)
     lat2, lon2 = math.radians(p2.lat), math.radians(p2.lon)
-    
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    
-    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
+    dlat, dlon = lat2 - lat1, lon2 - lon1
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-def predict_route_deviation(current: Coordinate, planned: List[Coordinate]) -> float:
-    """
-    AI Heuristic: Finds the minimum distance from current location to planned travel corridor.
-    Returns deviation rate (0% to 100%).
-    """
+
+def _route_deviation_km(current: Coordinate, planned: List[Coordinate]) -> float:
+    """Minimum Haversine distance from current position to any planned waypoint."""
     if not planned:
         return 0.0
-    
-    # Calculate Haversine distance to all planned route coordinates
-    distances = [calculate_distance(current, node) for node in planned]
-    min_dist_km = min(distances) if distances else 0.0
-    
-    # Standard security corridor: 2 km buffer zone
-    # If tourist drifts past 2km, scale deviation rate linearly up to 5km (100% breach)
-    if min_dist_km <= 0.8:
-        return 0.0
-    elif min_dist_km >= 4.0:
-        return 100.0
-    else:
-        return ((min_dist_km - 0.8) / (4.2 - 0.8)) * 100.0
+    return min(_haversine_km(current, wp) for wp in planned)
 
-def evaluate_vital_distress(hr: int, spo2: int) -> Dict[str, any]:
+
+def _hrv_proxy(hr: int) -> float:
     """
-    Evaluates bio-telemetry spikes using a standard classification framework.
+    Simple proxy for HRV: deviation from resting norm (72 BPM).
+    Higher absolute deviation → lower HRV → higher stress indicator.
+    Mapped to 0–100 range for feature parity.
     """
-    anomaly = False
-    details = []
-    severity = "GREEN"
+    return float(np.clip(abs(hr - 72) * 1.5, 0, 100))
 
-    # Hypoxia warning threshold
-    if spo2 < 85:
-        anomaly = True
-        details.append(f"Hypoxia Alert: Oxygen critically low ({spo2}%)")
-        severity = "RED"
-    elif spo2 < 90:
-        anomaly = True
-        details.append(f"Hypoxia Warning: Mild oxygen drop ({spo2}%)")
-        severity = "AMBER"
 
-    # Cardiac distress thresholds
-    if hr > 140:
-        anomaly = True
-        details.append(f"Tachycardia Spike: Spiked heartbeat ({hr} BPM)")
-        severity = "RED" if severity == "RED" or spo2 < 90 else "AMBER"
-    elif hr < 45:
-        anomaly = True
-        details.append(f"Bradycardia Alert: Flatlining heartbeat ({hr} BPM)")
-        severity = "RED"
+def _severity_from_score(score: float) -> str:
+    if score >= 0.75:
+        return "CRITICAL"
+    if score >= 0.50:
+        return "HIGH"
+    if score >= 0.25:
+        return "MEDIUM"
+    return "LOW"
 
-    return {
-        "anomalyDetected": anomaly,
-        "details": details,
-        "severity": severity,
-        "scores": {
-            "cardiacIndex": float(np.clip((hr - 72) / 68, -1, 1)),
-            "respiratoryIndex": float(np.clip((98 - spo2) / 18, 0, 1))
-        }
-    }
+
+def _retrain_model() -> None:
+    """
+    Incrementally retrain the Isolation Forest on the rolling buffer
+    combined with the original baseline to prevent concept drift.
+    """
+    global _model, _scaler
+    new_data  = np.array(_telemetry_buffer)
+    combined  = np.vstack([_baseline, new_data])
+    _scaler   = StandardScaler().fit(combined)
+    _model    = IsolationForest(
+        n_estimators=150,
+        contamination=0.05,
+        random_state=42,
+        n_jobs=-1,
+    )
+    _model.fit(_scaler.transform(combined))
+
+# ---------------------------------------------------------------------------
+# API Endpoints
+# ---------------------------------------------------------------------------
 
 @app.post("/api/v1/ai/predict_anomaly", response_model=Dict)
-async def process_telemetry(payload: TelemetryPayload):
+async def predict_anomaly(payload: TelemetryPayload):
     """
-    Main telemetry intake pipeline.
-    Determines route deviation, checks vitals, and logs anomalous behavior state.
+    Main telemetry intake — runs Isolation Forest inference on every request.
+
+    Feature vector:
+      [route_deviation_km, heart_rate, spo2, battery, hrv_proxy]
+
+    The Isolation Forest returns an anomaly score in [-1, 1] which is
+    normalised to a human-readable threat score in [0, 1].
     """
+    global _telemetry_buffer
+
     try:
-        # 1. Analyze route boundaries
-        deviation_rate = predict_route_deviation(payload.currentLocation, payload.plannedPath)
-        
-        # 2. Check wearable vitals
-        vitals_report = evaluate_vital_distress(payload.heartRate, payload.spo2)
-        
-        # 3. Compile overall anomaly threat index (0.0 to 1.0)
-        threat_score = 0.0
-        
-        # Geofence breach weights heavily
-        if deviation_rate > 50.0:
-            threat_score += 0.5
-        else:
-            threat_score += (deviation_rate / 100.0) * 0.3
-            
-        # Vitals weight
-        if vitals_report["severity"] == "RED":
-            threat_score += 0.5
-        elif vitals_report["severity"] == "AMBER":
-            threat_score += 0.25
-            
-        # Low phone battery penalty
-        if payload.battery < 15:
-            threat_score += 0.2
-            
-        threat_score = min(1.0, threat_score)
-        
-        # 4. Determine final action status
-        safety_status = "SAFE"
-        if threat_score >= 0.7:
-            safety_status = "CRITICAL_DISTRESS"
-        elif threat_score >= 0.35:
-            safety_status = "WARNING_SUSPECT"
-            
+        # 1. Build feature vector
+        deviation_km = _route_deviation_km(payload.currentLocation, payload.plannedPath)
+        hrv          = _hrv_proxy(payload.heartRate)
+        features     = np.array([[
+            deviation_km,
+            float(payload.heartRate),
+            float(payload.spo2),
+            float(payload.battery),
+            hrv,
+        ]])
+
+        # 2. Scale & run Isolation Forest
+        features_scaled = _scaler.transform(features)
+
+        # decision_function → negative = more anomalous
+        raw_score = float(_model.decision_function(features_scaled)[0])   # typically [-0.5, 0.5]
+        label     = int(_model.predict(features_scaled)[0])               # -1 anomaly, 1 normal
+
+        # Normalise raw_score to [0, 1]: more negative → higher threat
+        threat_score = float(np.clip((raw_score * -1 + 0.5), 0.0, 1.0))
+
+        # 3. Rule-based overrides for critical physiological thresholds
+        #    (Isolation Forest may miss these in small buffers)
+        if payload.spo2 < 85:
+            threat_score = max(threat_score, 0.85)
+        if payload.heartRate > 150 or payload.heartRate < 40:
+            threat_score = max(threat_score, 0.75)
+        if deviation_km > 5.0:
+            threat_score = max(threat_score, 0.70)
+        if payload.battery < 10:
+            threat_score = max(threat_score, 0.55)
+
+        threat_score = round(min(threat_score, 1.0), 3)
+        severity     = _severity_from_score(threat_score)
+
+        # 4. Buffer telemetry & retrain periodically
+        _telemetry_buffer.append(features[0].tolist())
+        if len(_telemetry_buffer) >= RETRAIN_EVERY:
+            _retrain_model()
+            _telemetry_buffer = []
+
+        # 5. Compile response
         report = {
-            "tokenId": payload.tokenId,
-            "threatScore": float(round(threat_score, 3)),
-            "safetyStatus": safety_status,
-            "routeDeviationPercent": float(round(deviation_rate, 2)),
-            "vitalsAnalysis": vitals_report,
-            "phoneBatteryLevel": payload.battery,
-            "timestamp": time.time()
+            "tokenId":              payload.tokenId,
+            "threatScore":          threat_score,
+            "anomalyLabel":         "ANOMALY" if label == -1 else "NORMAL",
+            "severity":             severity,
+            "safetyStatus":         "CRITICAL_DISTRESS" if threat_score >= 0.75 else
+                                    "WARNING_SUSPECT"   if threat_score >= 0.25 else "SAFE",
+            "modelType":            "IsolationForest",
+            "featureVector": {
+                "routeDeviationKm": round(deviation_km, 3),
+                "heartRate":        payload.heartRate,
+                "spo2":             payload.spo2,
+                "battery":          payload.battery,
+                "hrvProxy":         round(hrv, 2),
+            },
+            "bufferSize":           len(_telemetry_buffer),
+            "timestamp":            time.time(),
         }
-        
-        # Cache updates
+
         ACTIVE_ANOMALY_REGISTRY[payload.tokenId] = report
-        
         return report
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Engine failure: {str(e)}")
 
+
 @app.get("/api/v1/ai/active_threats")
 async def get_active_threats():
-    """
-    Get all active alerts sorted by threat severity (high threat score first)
-    """
-    sorted_threats = sorted(
-        [v for v in ACTIVE_ANOMALY_REGISTRY.values() if v["threatScore"] > 0.2],
+    """Return all tourists with threat score > 0.20, sorted by severity."""
+    return sorted(
+        [v for v in ACTIVE_ANOMALY_REGISTRY.values() if v["threatScore"] > 0.20],
         key=lambda x: x["threatScore"],
-        reverse=True
+        reverse=True,
     )
-    return sorted_threats
+
+
+@app.get("/api/v1/ai/model_info")
+async def model_info():
+    """Return current model configuration and buffer stats."""
+    return {
+        "model":           "IsolationForest",
+        "n_estimators":    150,
+        "contamination":   0.05,
+        "baseline_size":   len(_baseline),
+        "buffer_size":     len(_telemetry_buffer),
+        "retrain_every":   RETRAIN_EVERY,
+        "features":        ["route_deviation_km", "heart_rate", "spo2", "battery", "hrv_proxy"],
+        "status":          "ONLINE",
+        "timestamp":       time.time(),
+    }
+
 
 @app.get("/api/v1/ai/health")
 async def health_check():
-    return {"status": "ONLINE", "nodes_verified": 3, "timestamp": time.time()}
+    return {"status": "ONLINE", "model": "IsolationForest", "timestamp": time.time()}
+
 
 if __name__ == "__main__":
     import uvicorn
