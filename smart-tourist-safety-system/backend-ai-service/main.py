@@ -84,14 +84,23 @@ def get_db():
     finally:
         db.close()
 
+def _truncate_password(password: str) -> str:
+    """Truncate password to 72 bytes (bcrypt limit)."""
+    if isinstance(password, str):
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        return password_bytes.decode('utf-8', errors='ignore')
+    return password
+
 def get_password_hash(password: str) -> str:
-    # Truncate password to 72 bytes (bcrypt limit)
-    password = password[:72]
+    """Hash password with bcrypt, truncating to 72 bytes first."""
+    password = _truncate_password(password)
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Truncate password to 72 bytes (bcrypt limit) for verification
-    plain_password = plain_password[:72]
+    """Verify plain password against bcrypt hash, truncating to 72 bytes first."""
+    plain_password = _truncate_password(plain_password)
     return pwd_context.verify(plain_password, hashed_password)
 
 def create_access_token(data: dict, expires_delta: Optional[float] = None) -> str:
